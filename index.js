@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion } = require("mongodb");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -23,15 +23,25 @@ const client = new MongoClient(uri, {
 });
 
 async function run() {
-    try {
-      await client.connect();
-      const db = client.db("smart-bills");
-      console.log(
-        "Pinged your deployment. You successfully connected to MongoDB!"
-      );
-    } catch (error) {
-      console.error("❌ MongoDB connection failed:", error);
-    }
+  try {
+    // Connect to MongoDB
+    await client.connect();
+    const db = client.db("smart-bills");
+    const billsCollection = db.collection("bills");
+
+    //post bills
+    app.post("/bills", async (req, res) => {
+      const newBill = req.body;
+      const result = billsCollection.insertOne(newBill);
+      res.send(result);
+    });
+
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
+  } catch (error) {
+    console.error("❌ MongoDB connection failed:", error);
+  }
 }
 run().catch(console.dir);
 
