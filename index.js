@@ -23,6 +23,7 @@ const client = new MongoClient(uri, {
 });
 
 let billsCollection;
+let paidBillsCollection;
 
 async function run() {
   try {
@@ -30,6 +31,7 @@ async function run() {
     await client.connect();
     const db = client.db("smart-bills");
     billsCollection = db.collection("bills");
+    paidBillsCollection = db.collection("paidBills");
 
     //post bills
     app.post("/bills", async (req, res) => {
@@ -125,6 +127,20 @@ async function run() {
   } catch (error) {
     console.error("❌ MongoDB connection failed:", error);
   }
+
+  //Add a new paid bill
+  app.post("/paid-bills", async (req, res) => {
+    const paidBill = req.body;
+
+    if (!paidBill || typeof paidBill !== "object") {
+      return res.status(400).send({ message: "Invalid request body" });
+    }
+
+    const result = await paidBillsCollection.insertOne(paidBill);
+    res.send(result);
+  });
+
+
 }
 run().catch(console.dir);
 
