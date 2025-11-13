@@ -3,7 +3,12 @@ const cors = require("cors");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const admin = require("firebase-admin");
-const serviceAccount = require("./serviceKey.json");
+
+const decoded = Buffer.from(
+  process.env.fierebase_serviice_key,
+  "base64"
+).toString("utf8");
+const serviceAccount = JSON.parse(decoded);
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -142,9 +147,9 @@ async function run() {
       res.send(result);
     });
 
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } catch (error) {
     console.error("❌ MongoDB connection failed:", error);
   }
@@ -164,20 +169,38 @@ async function run() {
   // get paid bills
   app.get("/paid-bills/user", verifyToken, async (req, res) => {
     const { email } = req.query;
-    if (!email) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Email is required" });
+
+    if (!email || email !== req.decodedUser.email) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: You can only access your own bills",
+      });
     }
 
-    const bills = await paidBillsCollection.find({ email }).toArray();
-    res.send(bills);
+    try {
+      const bills = await paidBillsCollection.find({ email }).toArray();
+      res.send(bills);
+    } catch (err) {
+      console.error(err);
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to fetch bills" });
+    }
   });
 
-  // Updet Paid bills
+  // Update paid bill
   app.patch("/paid-bills/:id", verifyToken, async (req, res) => {
     const id = req.params.id;
     const updatedBill = req.body;
+
+    const bill = await paidBillsCollection.findOne({ _id: new ObjectId(id) });
+
+    if (!bill) return res.status(404).json({ message: "Bill not found" });
+
+    if (bill.email !== req.decodedUser.email) {
+      return res.status(403).json({ message: "Forbidden: Not your bill" });
+    }
+
     const result = await paidBillsCollection.updateOne(
       { _id: new ObjectId(id) },
       { $set: updatedBill }
@@ -188,6 +211,14 @@ async function run() {
   // Delete a bill
   app.delete("/paid-bills/:id", verifyToken, async (req, res) => {
     const id = req.params.id;
+    const bill = await paidBillsCollection.findOne({ _id: new ObjectId(id) });
+
+    if (!bill) return res.status(404).json({ message: "Bill not found" });
+
+    if (bill.email !== req.decodedUser.email) {
+      return res.status(403).json({ message: "Forbidden: Not your bill" });
+    }
+
     const result = await paidBillsCollection.deleteOne({
       _id: new ObjectId(id),
     });

@@ -5,3 +5,6 @@ node_modules/
 .env
 
 serviceKey.json
+.vercel
+
+encode.js
