@@ -15,14 +15,6 @@ This backend handles **CRUD operations** for bills, manages **user-specific paym
 
 ---
 
-## 🖼️ Screenshot / Example Response
-
-*(Optional: Add a screenshot of Postman request or API response here)*
-
-![API Example](https://i.ibb.co/6H3v1kf/api-screenshot.png)
-
----
-
 ## 🧱 Tech Stack
 
 * **Node.js** – Backend runtime environment
